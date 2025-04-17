@@ -1,0 +1,29 @@
+---
+# Sample groups configuration file
+# Define device groups with shared attributes
+
+cisco_ios:
+  platform: ios
+  connection_options:
+    napalm:
+      extras:
+        optional_args:
+          transport: ssh
+          secret: "{{ env.get('NR_ENABLE_PASSWORD', '') }}"
+
+cisco_nxos:
+  platform: nxos
+  connection_options:
+    napalm:
+      extras:
+        optional_args:
+          transport: ssh
+          secret: "{{ env.get('NR_ENABLE_PASSWORD', '') }}"
+
+juniper:
+  platform: junos
+  connection_options:
+    napalm:
+      extras:
+        optional_args:
+          transport: ssh

@@ -1,0 +1,20 @@
+---
+# Main Nornir configuration file
+
+inventory:
+  plugin: SimpleInventory
+  options:
+    host_file: "conf/hosts.yaml"
+    group_file: "conf/groups.yaml"
+    defaults_file: "conf/defaults.yaml"
+
+runner:
+  plugin: threaded
+  options:
+    num_workers: 100
+
+# logging:
+#  enabled: false
+#  level: INFO
+#  file: "nornir.log"
+#  to_console: true

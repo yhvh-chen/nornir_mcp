@@ -1,0 +1,14 @@
+---
+# Default configuration for all devices
+# Uses environment variables for credentials
+
+username: "{{ env.get('NR_USER', '') }}"
+password: "{{ env.get('NR_PASS', '') }}"
+
+connection_options:
+  napalm:
+    platform: ios
+    extras:
+      optional_args:
+        transport: ssh
+        secret: "{{ env.get('NR_ENABLE_PASSWORD', '') }}"
