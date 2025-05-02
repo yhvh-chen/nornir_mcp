@@ -20,7 +20,7 @@ ERROR_RESPONSE = Dict[str, Any]
 class NornirManager:
     """Encapsulates Nornir operations for network device management."""
 
-    def __init__(self, config_file: str = "conf_test/config.yaml"):
+    def __init__(self, config_file: str = "conf/config.yaml"):
         """Initialize Nornir."""
         logger.info("[Setup] Initializing Nornir manager with config: %s...", config_file)
         self.nr: Optional[Nornir] = None # Initialize as None

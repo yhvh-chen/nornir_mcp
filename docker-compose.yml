@@ -1,13 +1,11 @@
-version: '3'
-
 services:
-  nornir-mcp:
-    build: .
-    container_name: nornir-mcp
+  nirnor-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile # This still points to the updated Dockerfile
+    container_name: nirnor-mcp-server
+    ports:
+      - "8000:8000"
     volumes:
       - ./conf:/app/conf
-    env_file:
-      - .env
-    ports:
-      - "8000:8000"  # Adjust if your MCP server uses a different port
     restart: unless-stopped

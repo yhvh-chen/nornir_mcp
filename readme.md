@@ -1,136 +1,95 @@
-# Nornir MCP Server
+# 🌐 Nornir MCP Server
 
-A Model Context Protocol (MCP) server for network automation using Nornir and NAPALM.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Features
+A [FastMCP](https://github.com/fastmcp/fastmcp) server providing network automation tools powered by [Nornir](https://github.com/nornir-automation/nornir) and [NAPALM](https://github.com/napalm-automation/napalm).
 
-- SSE-based data streaming
-- Docker containerization
-- Persistent configuration via volume mounts
-- NAPALM getters for network device information
-- Nornir inventory management
-- Command execution on network devices
-- Environment variable-based authentication
+This server acts as a bridge, exposing Nornir/NAPALM network operations as MCP (Massively Concurrent Processing) tools, making them easily accessible from compatible MCP clients (like the FastMCP Web UI).
 
-## Prerequisites
+## ✨ Key Features
 
-- Python 3.10+
-- Docker and Docker Compose (for containerized deployment)
-- Network devices accessible via SSH
+* Leverages Nornir for inventory management and concurrent task execution against network devices.
+* Uses NAPALM for multi-vendor device interaction (information gathering, command execution).
+* Built with FastMCP for seamless integration with MCP clients using various transports (SSE in this configuration).
+* Containerized with Docker 🐳 for easy setup and deployment.
+* Uses [`uv`](https://github.com/astral-sh/uv) for fast Python dependency management within the container ⚡.
 
-## Installation
+## 🔧 Prerequisites
 
-### Local Development
+Before you begin, ensure you have the following installed:
 
-1. Create a virtual environment and install dependencies:
+* [Docker](https://docs.docker.com/get-docker/)
+* [Docker Compose](https://docs.docker.com/compose/install/) (Usually included with Docker Desktop)
 
-```bash
-# Using uv (recommended)
-uv venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-uv pip install -e .
+## ⚙️ Configuration
 
-# Or using pip
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-pip install -e .
-```
+Before running the server, you **must** configure your network inventory and device credentials:
 
-2. Configure your network devices in the `conf` directory:
-   - `hosts.yaml`: Define your network devices
-   - `groups.yaml`: Define device groups with shared attributes
-   - `defaults.yaml`: Set default values for all devices
-   - `config.yaml`: Configure Nornir settings
+1.  Navigate to the `conf/` directory in the project.
+2.  **Edit `hosts.yaml`**: Define your network devices. Specify their management IP/hostname, platform (e.g., `ios`, `junos`, `eos`), credentials (if not using defaults), and assign them to groups if desired.
+3.  **Edit `groups.yaml`**: Define device groups with shared properties (like platform or connection options). Settings here can override defaults.
+4.  **Edit `defaults.yaml`**: Set default credentials (`username`, `password`) and connection options (like NAPALM `secret` for enable passwords or default `platform`).
+    * **⚠️ Important Security Note:** The default configuration uses plaintext credentials in YAML files. This is suitable for testing/lab environments. For production, **strongly consider** using Nornir's built-in secrets management features (e.g., environment variables, HashiCorp Vault plugin) to avoid storing sensitive information directly in configuration files. Modify `nornir_ops.py` and your configuration if you implement a secrets provider.
+5.  **Review `config.yaml`**: Ensure the inventory file paths (`host_file`, `group_file`, `defaults_file`) point correctly to the files within the `conf/` directory (they should by default). Adjust runner options (`num_workers`) if needed.
 
-3. Set up environment variables in `.env` file:
+## ▶️ Running the Server
 
-```
-NR_USER=your_username
-NR_PASS=your_password
-NR_ENABLE_PASSWORD=your_enable_password
-```
+Once configured, you can easily run the server using Docker Compose:
 
-4. Run the MCP server:
+1.  Ensure you have configured the `conf/` directory as described above.
+2.  Open a terminal or command prompt in the project's root directory (the same directory as the `Dockerfile` and `docker-compose.yml` files).
+3.  Run the following command:
+    ```bash
+    docker-compose up --build
+    ```
+    * The `--build` flag tells Docker Compose to build the image based on the `Dockerfile` the first time or if any project files (like `.py` files or `pyproject.toml`) have changed.
+    * This command will start the Nornir MCP server in a Docker container.
+4.  The server logs will be displayed in your terminal. By default, it should be accessible on port `8000` of your host machine (localhost).
+5.  To stop the server, press `Ctrl+C` in the terminal where `docker-compose` is running. To remove the container afterwards, run `docker-compose down`.
 
-```bash
-python server.py
-```
+## 🔌 Adding to MCP Client
 
-### Docker Deployment
+To use the tools provided by this server in an MCP client (like the official [FastMCP Web UI](https://github.com/fastmcp/fastmcp-webui) or other compatible clients):
 
-1. Configure your network devices in the `conf` directory as described above.
+1.  Make sure the Nornir MCP server is running (using `docker-compose up`).
+2.  Open your MCP client application.
+3.  Find the option to add or manage MCP Server connections.
+4.  Add a new connection with the following details:
+    * **Server URL**: Since this server uses the SSE (Server-Sent Events) transport and runs on port 8000 by default, the URL will be:
+        * `sse://localhost:8000`
+        * *(If your Docker host has a different IP address accessible by the client, replace `localhost` with that IP, e.g., `sse://192.168.1.100:8000`)*
+    * **Connection Name**: Give it a descriptive name, for example, `Nornir Lab Server`.
+5.  Save and connect to the newly added server.
+6.  The MCP client should discover the `Nornir_MCP` service and list all the available tools (like `get_facts`, `send_command`, etc.). You can now use these tools via the client interface! 🎉
 
-2. Set up environment variables in `.env` file.
+## 🛠️ Available Tools & Resources
 
-3. Build and run the Docker container:
+Once connected via an MCP client, the following tools (under the "Nornir_MCP" service name) should typically be available:
 
-```bash
-docker-compose up -d
-```
+* **Inventory:**
+    * `list_all_hosts`: Lists devices configured in your Nornir inventory (`conf/hosts.yaml`).
+* **NAPALM Getters:** (Retrieve information)
+    * `get_facts`
+    * `get_interfaces`
+    * `get_interfaces_ip`
+    * `get_interfaces_counters`
+    * `get_config` (with `retrieve` option: running, startup, candidate)
+    * `get_arp_table`
+    * `get_mac_address_table`
+    * `get_users`
+    * `get_vlans`
+    * `get_snmp_information`
+    * `get_bgp_neighbors`
+    * *(Availability depends on device platform and NAPALM driver support)*
+* **Execution:**
+    * `send_command`: Send a single, read-only command to a device and get the output.
+* **Streaming Resource:**
+    * `sse://updates`: Provides a simple heartbeat event stream. (Can be subscribed to by clients supporting SSE resources).
 
-## Available MCP Tools
+## 📄 License
 
-### NAPALM Getters
+This project is licensed under the MIT License.
 
-- `get_facts(hostname)`: Get device facts
-- `get_environment(hostname)`: Get device environment information
-- `get_config(hostname)`: Get device configuration
-- `get_alive(hostname)`: Check if device is alive
-- `get_arp_table(hostname)`: Get device ARP table
-- `get_bgp_neighbors(hostname)`: Get device BGP neighbors
-- `get_interfaces(hostname)`: Get device interfaces
-- `get_interfaces_counters(hostname)`: Get device interface counters
-- `get_interfaces_ip(hostname)`: Get device interface IP addresses
-- `get_mac_address_table(hostname)`: Get device MAC address table
-- `get_traceroute(hostname, destination)`: Get traceroute results
+## 🙌 Contributing
 
-### Inventory Management
-
-- `list_all_hosts()`: List all hosts in the inventory
-- `list_hosts_in_group(group)`: List all hosts in a specific group
-- `get_host_by_name(name)`: Get host information by name
-- `get_host_by_hostname(hostname)`: Get host information by hostname
-
-### Command Execution
-
-- `send_command(hostname, command)`: Send a command to a device
-
-## SSE Streaming
-
-The server provides an SSE endpoint at `/updates` for streaming real-time updates.
-
-## Configuration Files
-
-### hosts.yaml
-
-```yaml
-router1:
-  hostname: 192.168.1.1
-  platform: ios
-  groups:
-    - cisco_ios
-```
-
-### groups.yaml
-
-```yaml
-cisco_ios:
-  platform: ios
-  connection_options:
-    napalm:
-      extras:
-        optional_args:
-          transport: ssh
-          secret: "{{ env.get('NR_ENABLE_PASSWORD', '') }}"
-```
-
-### defaults.yaml
-
-```yaml
-username: "{{ env.get('NR_USER', '') }}"
-password: "{{ env.get('NR_PASS', '') }}"
-```
-
-## License
-
-MIT
+Contributions, issues, and feature requests are welcome! Please feel free to submit them via the project's repository.
