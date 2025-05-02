@@ -126,4 +126,4 @@ if __name__ == "__main__":
     logger.info("[Setup] Starting Nornir MCP server...") #
     # Ensure transport matches your deployment needs (e.g., 'sse', 'http')
     # The original code used 'sse', maintaining that here.
-    mcp.run(transport='sse') #
+    mcp.run(transport='sse', host='0.0.0.0', port=8000)

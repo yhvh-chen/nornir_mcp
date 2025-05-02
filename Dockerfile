@@ -1,4 +1,4 @@
-# Dockerfile (Updated to install uv via pip)
+# Dockerfile (Corrected to install dependencies explicitly)
 
 # Use a specific Python version matching your pyproject.toml requirement (>=3.10)
 FROM python:3.11-slim
@@ -11,25 +11,26 @@ WORKDIR /app
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir uv
 
-# Copy the dependency definition file
+# Copy the dependency definition file (still useful for context, though not directly used by the next command)
 COPY pyproject.toml ./
 
-# Install dependencies using the uv command (now installed via pip)
-# uv can read dependencies directly from pyproject.toml
-# Using --system to install globally in the container's Python environment
-# Using --no-cache to avoid uv's own cache within the RUN layer
-RUN uv pip install --system --no-cache .
+# --- FIX ---
+# Install ONLY the dependencies listed in pyproject.toml, not the project itself (.)
+# This avoids triggering the hatchling build which requires README.md at this stage.
+RUN uv pip install --system --no-cache \
+    "nornir==3.5.0" \
+    "nornir-napalm" \
+    "fastmcp" \
+    "sse-starlette"
 
-# Copy the application source code
+# Now copy the application source code and the README
 COPY nornir_ops.py server.py ./
 
 # Copy the Nornir configuration files into the expected 'conf' directory
 COPY conf/ /app/conf/
 
 # Expose the port the FastMCP server will run on (default is often 8000)
-# Adjust if your server.py uses a different port
 EXPOSE 8000
 
 # Command to run the application when the container starts
-# Assumes server.py is the entry point and listens on 0.0.0.0 (required for Docker)
 CMD ["python", "server.py"]
