@@ -19,7 +19,10 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-config_test/
+conf_test/
+.clinerules
+.gitignore
+.python-version
 
 # Virtual environments
 .env
