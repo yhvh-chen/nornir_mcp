@@ -40,7 +40,7 @@ Once configured, you can easily run the server using Docker Compose:
 2.  Open a terminal or command prompt in the project's root directory (the same directory as the `Dockerfile` and `docker-compose.yml` files).
 3.  Run the following command:
     ```bash
-    docker-compose up --build
+    docker-compose up --build -d
     ```
     * The `--build` flag tells Docker Compose to build the image based on the `Dockerfile` the first time or if any project files (like `.py` files or `pyproject.toml`) have changed.
     * This command will start the Nornir MCP server in a Docker container.
