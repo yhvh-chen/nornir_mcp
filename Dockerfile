@@ -1,7 +1,7 @@
 # Dockerfile (Corrected to install dependencies explicitly)
 
 # Use a specific Python version matching your pyproject.toml requirement (>=3.10)
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 # Set the working directory inside the container
 WORKDIR /app
