@@ -2,15 +2,17 @@
 # server.py
 import logging
 import asyncio
-import os
+from typing import List # Import List for type hinting
 from fastmcp import FastMCP
 from nornir_ops import NornirManager
 from nornir_napalm.plugins.tasks import napalm_get
 from sse_starlette.sse import EventSourceResponse
 
+
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("nornir_mcp")
+logger = logging.getLogger("nornir_mcp") # Main application logger
 
 # Create an MCP server
 mcp = FastMCP("Nornir_MCP")
@@ -30,16 +32,26 @@ async def get_environment(hostname: str):
     return await nr_mgr.get_napalm_data(hostname, "environment")
 
 @mcp.tool("get_config")
-async def get_config(hostname: str):
-    """Get device configuration using NAPALM."""
-    logger.info(f"[Tool] get_config called for {hostname}")
-    return await nr_mgr.get_napalm_data(hostname, "config")
+async def get_config(hostname: str, retrieve: str = "running"):
+    """Get device configuration using NAPALM (running, startup, or candidate)."""
+    logger.info(f"[Tool] get_config called for {hostname} (retrieve={retrieve})")
+    # napalm_get handles the 'retrieve' option via optional_args
+    host = nr_mgr.nr.filter(name=hostname)
+    if not host.inventory.hosts:
+        return {"host": hostname, "success": False, "result": f"Host {hostname} not found"}
+    result = host.run(
+        task=napalm_get,
+        getters=["config"],
+        retrieve=retrieve # Pass retrieve option to napalm_get
+    )
+    return nr_mgr._format_result(result, hostname)
+
 
 @mcp.tool("get_alive")
 async def get_alive(hostname: str):
     """Check if device is alive using NAPALM."""
     logger.info(f"[Tool] get_alive called for {hostname}")
-    return await nr_mgr.get_napalm_data(hostname, "alive")
+    return await nr_mgr.get_napalm_data(hostname, "is_alive") # Correct getter is 'is_alive'
 
 @mcp.tool("get_arp_table")
 async def get_arp_table(hostname: str):
@@ -81,12 +93,15 @@ async def get_mac_address_table(hostname: str):
 async def get_traceroute(hostname: str, destination: str):
     """Get traceroute results using NAPALM."""
     logger.info(f"[Tool] get_traceroute called for {hostname} to {destination}")
-    # For traceroute, we need to pass optional parameters
+    # For traceroute, we need to pass optional parameters directly to the task run
     host = nr_mgr.nr.filter(name=hostname)
+    if not host.inventory.hosts:
+        return {"host": hostname, "success": False, "result": f"Host {hostname} not found"}
     result = host.run(
         task=napalm_get,
         getters=["traceroute"],
-        traceroute_destination=destination
+        # Pass optional arguments for the specific getter
+        getters_options={"traceroute": {"destination": destination}}
     )
     return nr_mgr._format_result(result, hostname)
 
@@ -115,36 +130,44 @@ async def get_host_by_hostname(hostname: str):
     logger.info(f"[Tool] get_host_by_hostname called for {hostname}")
     return nr_mgr.get_host_info(hostname=hostname)
 
-# Command execution endpoint
+# Command and Configuration execution endpoints
 @mcp.tool("send_command")
 async def send_command(hostname: str, command: str):
-    """Send a command to a device."""
+    """Send a read-only command to a device."""
     logger.info(f"[Tool] send_command called for {hostname}: {command}")
     return await nr_mgr.send_command(hostname, command)
+
+@mcp.tool("send_config")
+async def send_config(hostname: str, config_commands: List[str]):
+    """
+    Send configuration commands to a device.
+    Expects a JSON list of strings for config_commands.
+    """
+    logger.info(f"[Tool] send_config called for {hostname}")
+    if not isinstance(config_commands, list):
+         logger.error(f"[Tool] send_config failed for {hostname}: config_commands must be a list of strings.")
+         return {"host": hostname, "success": False, "result": "Invalid input: config_commands must be a list of strings."}
+    return await nr_mgr.send_config(hostname, config_commands)
 
 # SSE endpoint for streaming updates
 @mcp.resource("sse://updates")
 async def device_updates():
     """Stream device updates using SSE."""
     logger.info("[Resource] device_updates accessed")
-    
+
     async def event_generator():
         while True:
             # Simple heartbeat event
             yield {
-                "event": "heartbeat", 
+                "event": "heartbeat",
                 "data": {
                     "timestamp": asyncio.get_event_loop().time(),
                     "status": "ok"
                 }
             }
             await asyncio.sleep(10)
-            
-    return EventSourceResponse(event_generator())
 
-# if __name__ == "__main__":
-#     logger.info("[Setup] Starting Nornir MCP server")
-#     mcp.run(transport='stdio')
+    return EventSourceResponse(event_generator())
 
 if __name__ == "__main__":
     logger.info("[Setup] Starting Nornir MCP server in HTTP mode for SSE")

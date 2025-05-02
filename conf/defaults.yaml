@@ -1,14 +1,15 @@
 ---
 # Default configuration for all devices
-# Uses environment variables for credentials
+# IMPORTANT: Replace placeholder credentials with secure values
+#            Consider using Nornir secrets plugins for production environments
 
-username: "{{ env.get('NR_USER', '') }}"
-password: "{{ env.get('NR_PASS', '') }}"
+username: "cisco"  # Replace with default username or remove if defined per-host/group
+password: "cisco"  # Replace with default password or remove if defined per-host/group
 
 connection_options:
   napalm:
-    platform: ios
+    platform: ios # Default platform if not specified elsewhere
     extras:
       optional_args:
         transport: ssh
-        secret: "{{ env.get('NR_ENABLE_PASSWORD', '') }}"
+        secret: "cisco" # Replace with default enable secret or remove if not needed/defined per-host/group
