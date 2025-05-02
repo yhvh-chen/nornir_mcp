@@ -3,8 +3,8 @@
 # IMPORTANT: Replace placeholder credentials with secure values
 #            Consider using Nornir secrets plugins for production environments
 
-username: "username"  # Replace with default username or remove if defined per-host/group
-password: "password"  # Replace with default password or remove if defined per-host/group
+username: "cisco"  # Replace with default username or remove if defined per-host/group
+password: "cisco"  # Replace with default password or remove if defined per-host/group
 
 connection_options:
   napalm:
@@ -12,5 +12,5 @@ connection_options:
     extras:
       optional_args:
         transport: ssh
-        secret: "enable" # Replace with default enable secret or remove if not needed/defined per-host/group
+        secret: "cisco" # Replace with default enable secret or remove if not needed/defined per-host/group
         timeout: 60 # Optional: Increase timeout for slow devices

@@ -2,7 +2,7 @@
 # Sample hosts configuration file
 # Replace with your actual network devices
 
-R1:
+MELDC-RTR01:
   hostname: 192.168.100.101
   platform: ios
   username: cisco
@@ -12,7 +12,7 @@ R1:
   data:
     role: core_router
 
-R2:
+MTBDC-RTR01:
   hostname: 192.168.100.102
   platform: ios
   groups:
@@ -20,7 +20,7 @@ R2:
   data:
     role: core_router
 
-R3:
+KSPS-RTR01:
   hostname: 192.168.100.103
   platform: ios
   groups:

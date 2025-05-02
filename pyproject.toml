@@ -6,14 +6,13 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [
-    { name = "Network Automation Team" }
+    { name = "yhvh.chen" }
 ]
 dependencies = [
     "nornir==3.5.0",
     "nornir-napalm",
     "fastmcp",
     "sse-starlette",
-    "python-dotenv",
 ]
 
 [project.optional-dependencies]

@@ -1,0 +1,36 @@
+---
+# Sample groups configuration file
+# Define device groups with shared attributes
+# IMPORTANT: Replace placeholder credentials with secure values if needed per group
+#            Credentials defined here override defaults.yaml
+
+cisco_ios:
+  platform: ios
+  connection_options:
+    napalm:
+      extras:
+        optional_args:
+          transport: ssh
+          # You might define 'secret' here if it's specific to this group
+          # and different from defaults.yaml or hosts.yaml
+          # secret: "group_specific_enable_password"
+
+cisco_nxos:
+  platform: nxos
+  connection_options:
+    napalm:
+      extras:
+        optional_args:
+          transport: ssh
+          # Example: If NXOS devices use a different enable secret:
+          # secret: "nxos_enable_password"
+
+juniper:
+  platform: junos
+  connection_options:
+    napalm:
+      extras:
+        optional_args:
+          transport: ssh
+          # Junos doesn't typically use an 'enable' secret in the same way
+          # Ensure username/password provide sufficient privilege

@@ -1,245 +1,293 @@
 # nornir_ops.py
 import logging
-# import os # Removed os import as it's no longer needed for env vars
-from nornir import InitNornir
-from nornir.core.task import Result, Task
-from nornir_napalm.plugins.tasks import napalm_get, napalm_configure # Import napalm_configure
+from typing import Any, Dict, List, Optional, Callable
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("nornir_ops")
+from nornir import InitNornir
+from nornir.core import Nornir
+from nornir.core.inventory import Host
+from nornir.core.task import Result, Task
+# from nornir.core.exceptions import NornirExecutionError # Keep for InitNornir
+# from nornir.core.processor import Processor # Required if using Processors later
+# from nornir.core.runners import Runner # Required if implementing custom runners
+from nornir_napalm.plugins.tasks import napalm_get # Keep napalm_get
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+# Define a standard error response structure
+ERROR_RESPONSE = Dict[str, Any]
 
 class NornirManager:
     """Encapsulates Nornir operations for network device management."""
 
-    def __init__(self):
-        """Initialize Nornir with SimpleInventory configuration."""
-        logger.info("[Setup] Initializing Nornir manager...")
+    def __init__(self, config_file: str = "conf_test/config.yaml"):
+        """Initialize Nornir."""
+        logger.info("[Setup] Initializing Nornir manager with config: %s...", config_file)
+        self.nr: Optional[Nornir] = None # Initialize as None
         try:
-            self.nr = InitNornir(
-                runner={
-                    "plugin": "threaded",
-                    "options": {
-                        "num_workers": 100,
-                    },
-                },
-                inventory={
-                    "plugin": "SimpleInventory",
-                    "options": {
-                        "host_file": "conf/hosts.yaml",
-                        "group_file": "conf/groups.yaml",
-                        "defaults_file": "conf/defaults.yaml",
-                    },
-                },
-            )
+            self.nr = InitNornir(config_file=config_file)
             logger.info("[Setup] Nornir initialized successfully!")
         except Exception as e:
-            logger.error(f"[Error] Failed to initialize Nornir: {str(e)}")
-            raise
+            logger.error(f"[Error] Failed to initialize Nornir from {config_file}: {str(e)}", exc_info=True)
+            # You might want to prevent the manager from being used if init fails
+            # raise or ensure subsequent calls check self.nr is not None
+            raise # Re-raise the exception to signal failed initialization
 
-    async def get_napalm_data(self, hostname: str, getter: str):
+    def _validate_host_exists(self, hostname: str) -> bool:
+        """Check if a host exists in the inventory."""
+        if not self.nr:
+             logger.error("Nornir is not initialized. Cannot validate host.")
+             return False
+        if hostname not in self.nr.inventory.hosts:
+            logger.warning(f"Host '{hostname}' not found in Nornir inventory.")
+            return False
+        return True
+
+    async def _run_host_task(self, hostname: str, task_func: Callable[..., Result], task_name: str, **task_kwargs) -> Dict[str, Any]:
         """
-        Get data from a device using NAPALM getter.
+        Runs a single task on a specific host and formats the result.
 
-        Args:
-            hostname: The name of the host to query
-            getter: The NAPALM getter to use (facts, interfaces, etc.)
-
-        Returns:
-            Formatted result dictionary
+        Handles host validation, task execution with raise_on_error=False,
+        and result formatting.
         """
-        logger.info(f"[API] Getting {getter} from {hostname}")
+        if not self.nr:
+             logger.error("Nornir is not initialized. Cannot run task.")
+             return {"host": hostname, "success": False, "error_type": "NornirInitError", "result": "NornirManager not initialized."}
+
+        if not self._validate_host_exists(hostname):
+            return {"host": hostname, "success": False, "error_type": "InventoryError", "result": f"Host '{hostname}' not found."}
+
+        logger.debug(f"Running task '{task_name}' on host '{hostname}' with args: {task_kwargs}")
+
+        target_inventory = self.nr.filter(name=hostname)
+        if not target_inventory.inventory.hosts:
+            logger.error(f"Host '{hostname}' not found in Nornir inventory after filtering.")
+            return {"host": hostname, "success": False, "error_type": "InventoryError", "result": f"Host '{hostname}' not found after filtering."}
         try:
-            host = self.nr.filter(name=hostname)
-            if not host.inventory.hosts:
-                return {"host": hostname, "success": False, "result": f"Host {hostname} not found"}
-
-            result = host.run(
-                task=napalm_get,
-                getters=[getter],
-                name=f"Get {getter}"
+            # Run the task on the specific host, preventing errors from stopping execution
+            result = target_inventory.run(
+                task=task_func,
+                name=task_name,
+                raise_on_error=False, # Let Nornir handle task exceptions internally
+                **task_kwargs # Pass through specific arguments for the task
             )
+            # Format the result (handles both success and failure stored in the result object)
             return self._format_result(result, hostname)
+
         except Exception as e:
-            logger.error(f"[Error] Failed to get {getter} from {hostname}: {str(e)}")
-            return {"host": hostname, "success": False, "result": str(e)}
+            # Catch unexpected errors outside the Nornir task execution itself
+            logger.error(f"[Error] Unexpected error during task run setup/processing for {task_name} on {hostname}: {type(e).__name__}", exc_info=True)
+            return {"host": hostname, "success": False, "error_type": type(e).__name__, "result": f"Unexpected error during task processing: {str(e)}"}
 
-    async def send_command(self, hostname: str, command: str):
-        """
-        Send a command to a device (typically show commands).
 
-        Args:
-            hostname: The name of the host to send the command to
-            command: The command to send
+    def _format_result(self, result, hostname: str) -> Dict[str, Any]:
+        """Formats Nornir AggregatedResult for a single host. Handles raise_on_error=False."""
+        if not result: # Check if the result object itself is empty/None
+             logger.error(f"Received empty result object for host '{hostname}'.")
+             return {"host": hostname, "success": False, "error_type": "EmptyResult", "result": "Nornir returned an empty result object."}
 
-        Returns:
-            Formatted result dictionary
-        """
-        logger.info(f"[API] Sending command '{command}' to {hostname}")
-        try:
-            host = self.nr.filter(name=hostname)
-            if not host.inventory.hosts:
-                return {"host": hostname, "success": False, "result": f"Host {hostname} not found"}
+        if hostname not in result:
+            # This might happen if the filter somehow failed silently or the host died before processing
+            logger.error(f"Host '{hostname}' not found in Nornir AggregatedResult keys: {list(result.keys())}")
+            # Check if maybe the run failed globally?
+            failed_globally = getattr(result, 'failed', False) # Nornir results might have a global fail status
+            if failed_globally:
+                 logger.error("The Nornir run failed globally.")
+                 # Potentially extract global error if available
+            return {"host": hostname, "success": False, "error_type": "ResultMissingHost", "result": f"No result found for host '{hostname}' in the returned AggregatedResult."}
 
-            result = host.run(
-                task=self._send_command_task,
-                command=command,
-                name="Execute command"
-            )
-            return self._format_result(result, hostname)
-        except Exception as e:
-            logger.error(f"[Error] Failed to send command to {hostname}: {str(e)}")
-            return {"host": hostname, "success": False, "result": str(e)}
+        host_result = result[hostname] # This is a MultiResult for the specific host
 
-    async def send_config(self, hostname: str, config_commands: list[str]):
-        """
-        Send configuration commands to a device using NAPALM.
+        # Check the MultiResult's failed status first
+        if host_result.failed:
+            error_type = "TaskFailed"
+            error_msg = f"Task failed for host '{hostname}'."
+            exception_details = None
 
-        Args:
-            hostname: The name of the host to configure.
-            config_commands: A list of configuration commands (strings).
+            # Try to extract details from the actual task Result within MultiResult
+            if not host_result: # Check if MultiResult is empty
+                 logger.warning(f"Host {hostname} result marked failed, but no task results found in MultiResult.")
+                 error_msg = f"Nornir indicated failure for {hostname}, but no specific task details could be extracted."
+            else:
+                 try:
+                     # Assume one task per .run() call as per _run_host_task structure
+                     task_result = host_result[0]
+                     if task_result.exception:
+                         exception_details = task_result.exception
+                         error_type = type(exception_details).__name__
+                         error_msg = str(exception_details)
+                         # Log the specific error type and message
+                         logger.warning(f"Task '{task_result.name}' failed on {hostname}: {error_type} - {error_msg}", exc_info=False) # Log traceback only if needed via higher level debug settings
+                         # Special handling for known non-critical 'failures'
+                         if isinstance(exception_details, NotImplementedError):
+                             error_msg = f"Feature not implemented for '{task_result.name}' on this device/platform."
+                     elif task_result.result is not None: # Check if failure info is in the result field
+                         error_msg = f"Task '{task_result.name}' failed. Result/Error: {task_result.result}"
+                         logger.warning(error_msg)
+                     else: # Fallback if no exception or result data
+                         error_msg = f"Task '{task_result.name}' failed on host {hostname} with no specific exception or result data."
+                         logger.warning(error_msg)
 
-        Returns:
-            Formatted result dictionary indicating success/failure and diff (if any).
-        """
-        logger.info(f"[API] Sending configuration to {hostname}")
-        logger.debug(f"Config commands for {hostname}:\n" + "\n".join(config_commands))
+                 except IndexError:
+                     logger.error(f"Host {hostname} result marked failed, but could not access task result index 0 in MultiResult.")
+                     error_msg = f"Nornir indicated failure for {hostname}, but specific task details could not be extracted due to result structure."
+                 except Exception as e: # Catch any other error during formatting
+                     logger.error(f"Error formatting failed result for {hostname}: {e}", exc_info=True)
+                     error_type = "ResultFormatError"
+                     error_msg = f"Could not format the failure result: {str(e)}"
 
-        try:
-            host = self.nr.filter(name=hostname)
-            if not host.inventory.hosts:
-                return {"host": hostname, "success": False, "result": f"Host {hostname} not found"}
+            return {"host": hostname, "success": False, "error_type": error_type, "result": error_msg}
+        else:
+            # Task succeeded (host_result.failed is False)
+            if not host_result: # Should not happen if failed is False, but check anyway
+                 logger.error(f"Result formatting error: No task results found for successful run on host {hostname}.")
+                 return {"host": hostname, "success": False, "error_type": "ResultFormatError", "result": "Task completed successfully but MultiResult was empty."}
 
-            # Join the list of commands into a single multi-line string
-            config_string = "\n".join(config_commands)
+            try:
+                # Assume one task per .run() call
+                final_result = host_result[0].result
+                logger.info(f"Task '{host_result[0].name}' succeeded on {hostname}.")
+                return {"host": hostname, "success": True, "result": final_result}
+            except IndexError:
+                 logger.error(f"Result formatting error: No task result found at index 0 for successful run on host {hostname}.")
+                 return {"host": hostname, "success": False, "error_type": "ResultFormatError", "result": "Task completed successfully but returned no result data structure."}
+            except Exception as e:
+                 logger.error(f"Unexpected error processing successful result for {hostname}: {e}", exc_info=True)
+                 return {"host": hostname, "success": False, "error_type": "ResultProcessingError", "result": f"Error processing successful result: {str(e)}"}
 
-            result = host.run(
-                task=napalm_configure,
-                configuration=config_string, # Pass the configuration string
-                replace=False, # Use merge strategy (default)
-                name="Configure device"
-            )
-            # napalm_configure returns diff, commit status etc.
-            return self._format_result(result, hostname)
-        except Exception as e:
-            logger.error(f"[Error] Failed to send configuration to {hostname}: {str(e)}")
-            return {"host": hostname, "success": False, "result": str(e)}
+
+    async def get_napalm_data(self, hostname: str, getter: str) -> Dict[str, Any]:
+        """Get data using a specific NAPALM getter."""
+        logger.info(f"[API] Attempting to get '{getter}' from host: {hostname}")
+        return await self._run_host_task(
+            hostname=hostname,
+            task_func=napalm_get,
+            task_name=f"Get '{getter}' for {hostname}",
+            getters=[getter] # Pass 'getters' list as expected by napalm_get
+        )
+
+    async def send_command(self, hostname: str, command: str) -> Dict[str, Any]:
+        """Send a command to a device using NAPALM CLI."""
+        logger.info(f"[API] Attempting to send command '{command}' to host: {hostname}")
+        return await self._run_host_task(
+            hostname=hostname,
+            task_func=self._send_command_task,
+            task_name=f"Execute command on {hostname}",
+            command=command # Pass 'command' as expected by _send_command_task
+        )
 
     def _send_command_task(self, task: Task, command: str) -> Result:
         """
-        Task to send a command to a device using NAPALM CLI.
-
-        Args:
-            task: The Nornir task
-            command: The command to send
-
-        Returns:
-            Result object with command output
+        Nornir Task to send a command via NAPALM CLI.
+        This is called by _run_host_task. Errors are handled by raise_on_error=False.
         """
-        connection = task.host.get_connection("napalm", task.nornir.config)
-        return Result(
-            host=task.host,
-            result=connection.cli([command])
-        )
+        try:
+            # Get the NAPALM connection object
+            connection = task.host.get_connection("napalm", task.nornir.config)
+            # Execute the command
+            output_dict = connection.cli([command]) # Returns {command: output}
+            command_output = output_dict.get(command) # Extract output
 
-    def _format_result(self, result, hostname):
-        """
-        Format the result of a Nornir task.
+            if command_output is None:
+                # This indicates an issue with NAPALM's response format
+                logger.error(f"NAPALM cli output for command '{command}' on host {task.host.name} did not contain the command key. Output: {output_dict}")
+                raise ValueError(f"No output received in dict for command: {command}")
 
-        Args:
-            result: The Nornir result AggregatedResult object
-            hostname: The hostname string
+            return Result(
+                host=task.host,
+                result=command_output # Return only the command's output string
+            )
+        except Exception as e:
+             # Catching exceptions here allows Nornir (with raise_on_error=False)
+             # to record the specific error for this task. Re-raise it so Nornir catches it.
+             logger.debug(f"Exception within _send_command_task for {task.host.name}: {e}")
+             raise # Nornir will catch this and store it since raise_on_error=False
 
-        Returns:
-            Formatted result dictionary
-        """
-        if hostname not in result:
-            return {"host": hostname, "success": False, "result": "No result returned"}
+    # --- Inventory Information Methods ---
 
-        host_result = result[hostname] # This is a MultiResult object
+    def list_hosts(self, group: str = None) -> List[Dict[str, Any]]:
+        """Lists hosts from the Nornir inventory, optionally filtered by group."""
+        if not self.nr:
+             logger.error("Nornir is not initialized. Cannot list hosts.")
+             return []
 
-        # Check if any task within the MultiResult failed
-        failed = any(r.failed for r in host_result)
-        # Combine results or exceptions from all tasks for this host
-        if failed:
-            # Collect all exceptions
-            errors = [str(r.exception) for r in host_result if r.failed]
-            final_result = "; ".join(errors)
-        else:
-            # Collect all successful results
-            # For single tasks like napalm_get, there's usually one result
-            # For napalm_configure, the result contains the diff
-            results = [r.result for r in host_result if not r.failed]
-            # Handle cases where result might not be easily stringifiable (e.g., complex dicts)
-            try:
-                final_result = results[0] if len(results) == 1 else results
-            except Exception:
-                 final_result = str(results) # Fallback to string representation
-
-
-        return {
-            "host": hostname,
-            "success": not failed,
-            "result": final_result,
-        }
-
-    def list_hosts(self, group=None):
-        """
-        List all hosts or hosts in a specific group.
-
-        Args:
-            group: Optional group name to filter hosts
-
-        Returns:
-            List of host information dictionaries
-        """
-        hosts = []
-        filtered_hosts = self.nr.inventory.hosts
+        hosts_info = []
+        target_inventory = self.nr.inventory
 
         if group:
-            filtered_hosts = {name: host for name, host in filtered_hosts.items()
-                             if group in host.groups}
+            # Ensure group filtering is robust
+            try:
+                target_inventory = target_inventory.filter(filter_func=lambda h, g=group: g in h.groups)
+                logger.info(f"Listing hosts filtered by group: {group}")
+            except Exception as e:
+                logger.error(f"Failed to filter inventory by group '{group}': {e}", exc_info=True)
+                return [] # Return empty list on filter error
+        else:
+            logger.info("Listing all hosts in inventory")
 
-        for name, host in filtered_hosts.items():
-            hosts.append({
+        # Filter out sensitive keys when preparing the host list
+        sensitive_keys = {'password', 'secret'}
+
+        for name, host_obj in target_inventory.hosts.items():
+            # Ensure host_obj.data exists and is a dict before filtering
+            safe_data = {}
+            if isinstance(host_obj.data, dict):
+                 safe_data = {k: v for k, v in host_obj.data.items() if k not in sensitive_keys}
+
+            hosts_info.append({
                 "name": name,
-                "platform": host.platform,
-                "hostname": host.hostname,
-                "groups": list(host.groups)
+                "hostname": host_obj.hostname,
+                "platform": host_obj.platform,
+                "groups": list(host_obj.groups) if host_obj.groups else [],
+                "data": safe_data
             })
 
-        return hosts
+        logger.info(f"Found {len(hosts_info)} hosts matching criteria.")
+        return hosts_info
 
-    def get_host_info(self, name=None, hostname=None):
-        """
-        Get information about a specific host by name or hostname.
 
-        Args:
-            name: The name of the host in the inventory
-            hostname: The hostname (IP/FQDN) of the host
+    def get_host_info(self, name: Optional[str] = None, hostname: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """Retrieves detailed information about a specific host from the inventory."""
+        if not self.nr:
+             logger.error("Nornir is not initialized. Cannot get host info.")
+             return None
+        if not name and not hostname:
+            logger.warning("get_host_info called without name or hostname.")
+            return None
 
-        Returns:
-            Host information dictionary or None if not found
-        """
+        host_obj: Optional[Host] = None
+        search_key = ""
+        found_name = name # Keep track of the host's inventory name
+
         if name:
-            if name in self.nr.inventory.hosts:
-                host = self.nr.inventory.hosts[name]
-                return {
-                    "name": name,
-                    "platform": host.platform,
-                    "hostname": host.hostname,
-                    "groups": list(host.groups),
-                    "data": dict(host.items())
-                }
+            search_key = f"name '{name}'"
+            host_obj = self.nr.inventory.hosts.get(name)
         elif hostname:
-            for name, host in self.nr.inventory.hosts.items():
-                if host.hostname == hostname:
-                    return {
-                        "name": name,
-                        "platform": host.platform,
-                        "hostname": host.hostname,
-                        "groups": list(host.groups),
-                        "data": dict(host.items())
-                    }
+            search_key = f"hostname '{hostname}'"
+            # More efficient lookup if hostname is unique and indexed, but iterating is safe
+            for h_name, h_obj in self.nr.inventory.hosts.items():
+                if h_obj.hostname == hostname:
+                    host_obj = h_obj
+                    found_name = h_name # Update name based on hostname lookup
+                    break
+        # No need for else block due to the initial check
 
-        return None
+        if host_obj:
+            logger.info(f"Found host info for {search_key}")
+            # Explicitly list desired fields, avoid leaking unexpected data
+            # Do NOT include password/secret here
+            host_data = {
+                "name": found_name,
+                "hostname": host_obj.hostname,
+                "platform": host_obj.platform,
+                "username": host_obj.username, # Might be None if using defaults
+                "groups": list(host_obj.groups) if host_obj.groups else [],
+                "port": host_obj.port, # Might be None if using defaults
+                "connection_options": dict(host_obj.connection_options), # Be cautious about sensitive data within options
+                "data": dict(host_obj.data) # Already filtered in list_hosts, but filter again for safety? Usually data is non-sensitive.
+            }
+            # Consider further filtering connection_options/data if needed
+            return host_data
+        else:
+            logger.warning(f"Host not found in inventory using {search_key}")
+            return None
