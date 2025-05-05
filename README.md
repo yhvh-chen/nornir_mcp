@@ -56,11 +56,15 @@ To use the tools provided by this server in an MCP client (like the official [Fa
 3.  Find the option to add or manage MCP Server connections.
 4.  Add a new connection with the following details:
     * **Server URL**: Since this server uses the SSE (Server-Sent Events) transport and runs on port 8000 by default, the URL will be:
-        * `sse://localhost:8000`
-        * *(If your Docker host has a different IP address accessible by the client, replace `localhost` with that IP, e.g., `sse://192.168.1.100:8000`)*
+        * `http://localhost:8000/sse`
+        * *(If your Docker host has a different IP address accessible by the client, replace `localhost` with that IP, e.g., `http://192.168.1.100:8000/sse`)*
     * **Connection Name**: Give it a descriptive name, for example, `Nornir Lab Server`.
 5.  Save and connect to the newly added server.
 6.  The MCP client should discover the `Nornir_MCP` service and list all the available tools (like `get_facts`, `send_command`, etc.). You can now use these tools via the client interface! 🎉
+
+## Dify DSL Examples
+1. Nornir MCP.yml  - A simple example to chat with your devices.
+2. Device Check.yml - An example to run Device Assessment Report.
 
 ## 🛠️ Available Tools & Resources
 

@@ -1,0 +1,435 @@
+app:
+  description: ''
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: advanced-chat
+  name: Device Check
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/ollama:0.0.6@7d66a960a68cafdcdf5589fdf5d01a995533f956853c69c54eddcf797006fa37
+kind: app
+version: 0.2.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: true
+        isInLoop: false
+        iteration_id: '1746327760915'
+        sourceType: iteration-start
+        targetType: agent
+      id: 1746327760915start-source-1746327905446-target
+      source: 1746327760915start
+      sourceHandle: source
+      target: '1746327905446'
+      targetHandle: target
+      type: custom
+      zIndex: 1002
+    - data:
+        isInLoop: false
+        sourceType: code
+        targetType: iteration
+      id: 1746331127264-source-1746327760915-target
+      source: '1746331127264'
+      sourceHandle: source
+      target: '1746327760915'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: start
+        targetType: code
+      id: 1746285269249-source-1746331127264-target
+      source: '1746285269249'
+      sourceHandle: source
+      target: '1746331127264'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: iteration
+        targetType: llm
+      id: 1746327760915-source-1746364270345-target
+      source: '1746327760915'
+      sourceHandle: source
+      target: '1746364270345'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: answer
+      id: 1746364270345--1746364803905-target
+      source: '1746364270345'
+      sourceHandle: source
+      target: '1746364803905'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: R1
+        selected: false
+        title: Start
+        type: start
+        variables:
+        - label: Input the device's hostname
+          max_length: 48
+          options: []
+          required: true
+          type: text-input
+          variable: input_text
+      height: 117
+      id: '1746285269249'
+      position:
+        x: 30
+        y: 402
+      positionAbsolute:
+        x: 30
+        y: 402
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        desc: ''
+        error_handle_mode: terminated
+        height: 404
+        is_parallel: false
+        iterator_selector:
+        - '1746331127264'
+        - result
+        output_selector:
+        - '1746327905446'
+        - text
+        output_type: array[string]
+        parallel_nums: 10
+        selected: false
+        start_node_id: 1746327760915start
+        title: Netwrok Engineer
+        type: iteration
+        width: 507
+      height: 404
+      id: '1746327760915'
+      position:
+        x: 636
+        y: 402
+      positionAbsolute:
+        x: 636
+        y: 402
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 507
+      zIndex: 1
+    - data:
+        desc: ''
+        isInIteration: true
+        selected: false
+        title: ''
+        type: iteration-start
+      draggable: false
+      height: 48
+      id: 1746327760915start
+      parentId: '1746327760915'
+      position:
+        x: 60
+        y: 134.5
+      positionAbsolute:
+        x: 696
+        y: 536.5
+      selectable: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom-iteration-start
+      width: 44
+      zIndex: 1002
+    - data:
+        agent_parameters:
+          instruction:
+            type: constant
+            value: "You're a network automation engineer. \n1. Use the following too,\
+              \ or send a command:{{#1746327760915.item#}} to check the device:{{#1746285269249.input_text#}}.\n\
+              2. Convert it to a human-readable result with markdown format, including\
+              \ a table, breakdown, etc. \n3. Then add your technical analysis."
+          maximum_iterations:
+            type: constant
+            value: 10
+          mcp_servers_config:
+            type: constant
+            value: "{\n  \"server_name1\": {\n    \"transport\": \"sse\",\n    \"\
+              url\": \"http://192.168.100.50:8002/sse\"\n  }\n}"
+          model:
+            type: constant
+            value:
+              completion_params: {}
+              mode: chat
+              model: gemma3:12b-it-q8_0
+              model_type: llm
+              provider: langgenius/ollama/ollama
+              type: model-selector
+          query:
+            type: constant
+            value: '{{#1746327760915.item#}}{{#1746285269249.input_text#}}'
+          tools:
+            type: constant
+            value:
+            - enabled: true
+              extra:
+                description: 获取 MCP 服务端的工具列表。
+              parameters: {}
+              provider_name: junjiem/mcp_sse/mcp_sse
+              schemas: []
+              settings: {}
+              tool_description: 获取 MCP 服务端的工具列表。
+              tool_label: 获取 MCP 工具列表
+              tool_name: mcp_sse_list_tools
+              type: builtin
+            - enabled: true
+              extra:
+                description: 调用 MCP 服务端工具。
+              parameters:
+                arguments:
+                  auto: 1
+                  value: null
+                tool_name:
+                  auto: 1
+                  value: null
+              provider_name: junjiem/mcp_sse/mcp_sse
+              schemas:
+              - auto_generate: null
+                default: null
+                form: llm
+                human_description:
+                  en_US: Name of the tool to execute.
+                  ja_JP: Name of the tool to execute.
+                  pt_BR: Name of the tool to execute.
+                  zh_Hans: 要执行的工具的名称。
+                label:
+                  en_US: Tool Name
+                  ja_JP: Tool Name
+                  pt_BR: Tool Name
+                  zh_Hans: 工具名称
+                llm_description: Name of the tool to execute.
+                max: null
+                min: null
+                name: tool_name
+                options: []
+                placeholder: null
+                precision: null
+                required: true
+                scope: null
+                template: null
+                type: string
+              - auto_generate: null
+                default: null
+                form: llm
+                human_description:
+                  en_US: Tool arguments (JSON string in the python dict[str, Any]
+                    format).
+                  ja_JP: Tool arguments (JSON string in the python dict[str, Any]
+                    format).
+                  pt_BR: Tool arguments (JSON string in the python dict[str, Any]
+                    format).
+                  zh_Hans: 工具的参数。
+                label:
+                  en_US: Arguments
+                  ja_JP: Arguments
+                  pt_BR: Arguments
+                  zh_Hans: 参数
+                llm_description: Tool arguments (JSON string in the python dict[str,
+                  Any] format).
+                max: null
+                min: null
+                name: arguments
+                options: []
+                placeholder: null
+                precision: null
+                required: true
+                scope: null
+                template: null
+                type: string
+              settings: {}
+              tool_description: 调用 MCP 服务端工具。
+              tool_label: 调用 MCP 工具
+              tool_name: mcp_sse_call_tool
+              type: builtin
+        agent_strategy_label: ReAct (Support MCP Tools)
+        agent_strategy_name: mcp_sse_ReAct
+        agent_strategy_provider_name: junjiem/mcp_see_agent/mcp_see_agent
+        desc: ''
+        isInIteration: true
+        isInLoop: false
+        iteration_id: '1746327760915'
+        output_schema: null
+        plugin_unique_identifier: junjiem/mcp_see_agent:0.1.4@51e36edcd3f097a42b7fdcc84c92981a0fc19f698f4095b070bc2ddd192c864c
+        selected: false
+        title: Noninir
+        type: agent
+      height: 197
+      id: '1746327905446'
+      parentId: '1746327760915'
+      position:
+        x: 205.42857142857133
+        y: 65
+      positionAbsolute:
+        x: 841.4285714285713
+        y: 467
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+      zIndex: 1002
+    - data:
+        code: "\ndef main():\n    arr = [\"get_facts\", \n            \"get_vlans\"\
+          ,\n            \"get_users\", \n            \"get_interfaces\", \n     \
+          \       \"get_inferfaces_conters\",\n            \"get_interfaces_ip\",\n\
+          \            \"show ip route\"]\n    return {\n        \"result\": arr\n\
+          \    }\n"
+        code_language: python3
+        desc: ''
+        outputs:
+          result:
+            children: null
+            type: array[string]
+        selected: false
+        title: MCP TOOLS
+        type: code
+        variables: []
+      height: 53
+      id: '1746331127264'
+      position:
+        x: 333
+        y: 402
+      positionAbsolute:
+        x: 333
+        y: 402
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1746327760915'
+          - output
+        desc: ''
+        model:
+          completion_params: {}
+          mode: chat
+          name: gemma3:12b-it-q8_0
+          provider: langgenius/ollama/ollama
+        prompt_template:
+        - id: 020277a8-bb54-4b7d-a5f5-402cf25fe1f7
+          role: system
+          text: You are a Business Analyst and an expert at writing reports.
+        - id: 37b59691-7806-452c-a989-5f62a323bc0a
+          role: user
+          text: "Read the output from the network engineer: {{#1746327760915.output#}}.\
+            \ \n1. Reorganise the report for the manager and the engineer.\n2. Check\
+            \ the content, remove unnecessary content like instructions, thinking\
+            \ process, but keep his analysis tables and important technical details.\n\
+            3. Reorganise the report structure, make it more consistent and readable.\n\
+            4. Output in markdown format, check the markdown grammar.\n5. Do not add\
+            \ your option, input, instructions or thinking process."
+        selected: false
+        title: Business Analyst
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 89
+      id: '1746364270345'
+      position:
+        x: 1203
+        y: 402
+      positionAbsolute:
+        x: 1203
+        y: 402
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        answer: '{{#1746364270345.text#}}'
+        desc: ''
+        selected: false
+        title: Report
+        type: answer
+        variables: []
+      height: 103
+      id: '1746364803905'
+      position:
+        x: 1506
+        y: 402
+      positionAbsolute:
+        x: 1506
+        y: 402
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    viewport:
+      x: 38.166662942122
+      y: -188.32871320609524
+      zoom: 1.0610015965572788
