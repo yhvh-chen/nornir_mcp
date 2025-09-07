@@ -1,0 +1,33 @@
+# Command Blacklist
+# -----------------
+# This file defines commands and patterns that are blocked by the send_command tool
+# to prevent accidental or malicious operations on network devices.
+
+# A list of exact command strings to block.
+# These are case-insensitive.
+exact_commands:
+  - reload
+  - erase startup-config
+  - write erase
+  - delete flash:
+  - format flash:
+
+# A list of keywords that are not allowed anywhere in a command.
+# Useful for blocking variations of a dangerous command.
+# These are case-insensitive.
+keywords:
+  - erase
+  - format
+  - delete
+  - copy running-config startup-config # Example to prevent saving config
+  - wr # shorter version of 'write'
+
+# A list of characters or sequences that are blocked to prevent command chaining,
+# redirection, or other shell-like abuses.
+disallowed_patterns:
+  - "|"
+  - ">"
+  - "<"
+  - ";"
+  - "&&"
+  - "||"
