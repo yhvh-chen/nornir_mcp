@@ -13,8 +13,5 @@ runner:
   options:
     num_workers: 100
 
-# logging:
-#   #log_file: nornir.log # Optional: log to file
-#   level: DEBUG
-#   # format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s" # Optional: custom format
-#   to_console: true
+logging:
+  enabled: false

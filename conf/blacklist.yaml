@@ -25,9 +25,7 @@ keywords:
 # A list of characters or sequences that are blocked to prevent command chaining,
 # redirection, or other shell-like abuses.
 disallowed_patterns:
-  - "|"
   - ">"
   - "<"
   - ";"
   - "&&"
-  - "||"

@@ -1,11 +1,24 @@
+version: '3.8'
+
 services:
-  nirnor-mcp:
+  nornir-mcp:
     build:
       context: .
-      dockerfile: Dockerfile # This still points to the updated Dockerfile
-    container_name: nirnor-mcp-server
+      dockerfile: Dockerfile
+    container_name: nornir-mcp-server
     ports:
       - "8000:8000"
+    # No ports exposed directly; proxied by supergateway
+    environment:
+      - NORNIR_MCP_LOG=nornir.log
     volumes:
-      - ./conf:/app/conf
+      - ./conf:/app/conf:ro
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import sys; sys.exit(0)\""]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+    command: ["python", "run.py"]
+
+

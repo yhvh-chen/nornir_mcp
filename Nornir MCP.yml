@@ -131,13 +131,13 @@ workflow:
             value:
             - enabled: true
               extra:
-                description: 获取 MCP 服务端的工具列表。
+                description: Retrieve the list of MCP server tools.
               parameters: {}
               provider_name: junjiem/mcp_sse/mcp_sse
               schemas: []
               settings: {}
-              tool_description: 获取 MCP 服务端的工具列表。
-              tool_label: 获取 MCP 工具列表
+              tool_description: Retrieve the list of MCP server tools.
+              tool_label: Get MCP tools list
               tool_name: mcp_sse_list_tools
               type: builtin
             - enabled: true
@@ -159,12 +159,12 @@ workflow:
                   en_US: Name of the tool to execute.
                   ja_JP: Name of the tool to execute.
                   pt_BR: Name of the tool to execute.
-                  zh_Hans: 要执行的工具的名称。
+                  zh_Hans: Name of the tool to execute.
                 label:
                   en_US: Tool Name
                   ja_JP: Tool Name
                   pt_BR: Tool Name
-                  zh_Hans: 工具名称
+                  zh_Hans: Tool Name
                 llm_description: Name of the tool to execute.
                 max: null
                 min: null
@@ -186,7 +186,7 @@ workflow:
                     format).
                   pt_BR: Tool arguments (JSON string in the python dict[str, Any]
                     format).
-                  zh_Hans: 工具的参数。
+                  zh_Hans: Tool arguments.
                 label:
                   en_US: Arguments
                   ja_JP: Arguments
@@ -205,8 +205,8 @@ workflow:
                 template: null
                 type: string
               settings: {}
-              tool_description: 调用 MCP 服务端工具。
-              tool_label: 调用 MCP 工具
+              tool_description: Call an MCP server tool.
+              tool_label: Call MCP tool
               tool_name: mcp_sse_call_tool
               type: builtin
         agent_strategy_label: ReAct (Support MCP Tools)

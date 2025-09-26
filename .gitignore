@@ -21,8 +21,24 @@ wheels/
 *.egg
 conf_test/
 .clinerules
-.gitignore
 .python-version
+
+# Packaging
+pip-wheel-metadata/
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+tests/
+test_*.py
+*_test.py
+
+# Type checkers
+.mypy_cache/
+
+# Tox
+.tox/
 
 # Virtual environments
 .env
@@ -39,6 +55,11 @@ nornir.log
 
 # Docker
 .dockerignore
+
+# Docker build artifacts
+*.tar
+*.tar.gz
+
 
 # IDE
 .idea/

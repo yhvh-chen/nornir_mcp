@@ -1,0 +1,84 @@
+{
+  "cisco_ios_troubleshooting_commands": [
+    {
+      "command": "show version",
+      "description": "Displays the system hardware configuration, software version, and configuration files. Crucial for checking uptime and the IOS version.",
+      "usage_example": "show version"
+    },
+    {
+      "command": "show running-config",
+      "description": "Shows the currently active configuration on the device. Use 'show running-config | section <protocol/interface>' to narrow the output.",
+      "usage_example": "show running-config | section router bgp"
+    },
+    {
+      "command": "show interfaces",
+      "description": "Provides detailed status and statistics for all interfaces, including line protocol status, encapsulation, and traffic counters.",
+      "usage_example": "show interfaces GigabitEthernet0/1"
+    },
+    {
+      "command": "show ip interface brief",
+      "description": "Gives a quick, one-line summary of the status of each interface, including its IP address and operational state (up/down).",
+      "usage_example": "show ip interface brief"
+    },
+    {
+      "command": "show ip route",
+      "description": "Displays the IP routing table. Used to verify static routes, routing protocol entries, and overall L3 reachability.",
+      "usage_example": "show ip route 8.8.8.8"
+    },
+    {
+      "command": "show ip arp",
+      "description": "Shows the Address Resolution Protocol (ARP) table, which maps Layer 3 IP addresses to Layer 2 MAC addresses.",
+      "usage_example": "show ip arp"
+    },
+    {
+      "command": "show mac address-table",
+      "description": "Displays the Layer 2 MAC address forwarding table on a switch. Essential for troubleshooting L2 connectivity issues.",
+      "usage_example": "show mac address-table dynamic"
+    },
+    {
+      "command": "show cdp neighbors",
+      "description": "Shows directly connected Cisco devices using the Cisco Discovery Protocol (CDP), revealing local device IDs and port information.",
+      "usage_example": "show cdp neighbors detail"
+    },
+    {
+      "command": "show lldp neighbors",
+      "description": "A vendor-neutral alternative to CDP, LLDP (Link Layer Discovery Protocol) shows directly connected network devices.",
+      "usage_example": "show lldp neighbors"
+    },
+    {
+      "command": "show logging",
+      "description": "Displays the device's log messages, which are invaluable for identifying errors, interface flaps, and security events.",
+      "usage_example": "show logging"
+    },
+    {
+      "command": "show ip protocols",
+      "description": "Provides a summary of configured dynamic routing protocols (like OSPF, EIGRP, BGP), including timers, networks, and neighbor information.",
+      "usage_example": "show ip protocols"
+    },
+    {
+      "command": "show spanning-tree",
+      "description": "Shows the status of the Spanning Tree Protocol (STP) for a specific VLAN, including the root bridge, port roles, and status.",
+      "usage_example": "show spanning-tree vlan 10"
+    },
+    {
+      "command": "show crypto isakmp sa",
+      "description": "Displays the active Internet Key Exchange (IKE) Security Associations (SAs) for IPsec VPN tunnels (Phase 1).",
+      "usage_example": "show crypto isakmp sa"
+    },
+    {
+      "command": "show crypto ipsec sa",
+      "description": "Shows the IPsec Security Associations (SAs), including packets encrypted and decrypted, for active VPN tunnels (Phase 2).",
+      "usage_example": "show crypto ipsec sa"
+    },
+    {
+      "command": "ping",
+      "description": "Tests basic network connectivity to a destination IP address or hostname using ICMP echo requests.",
+      "usage_example": "ping 192.168.1.1"
+    },
+    {
+      "command": "traceroute",
+      "description": "Identifies the Layer 3 path (hops) to a destination, helping to locate routing loops or points of failure.",
+      "usage_example": "traceroute 8.8.8.8"
+    }
+  ]
+}

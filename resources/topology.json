@@ -1,0 +1,92 @@
+{
+  "topology": {
+    "nodes": [
+      {
+        "id": "NYDC-RTR01",
+        "type": "router"
+      },
+      {
+        "id": "BOSDC-RTR01",
+        "type": "router"
+      },
+      {
+        "id": "EWRDC-RTR01",
+        "type": "router"
+      },
+      {
+        "id": "ATT",
+        "type": "isp"
+      },
+      {
+        "id": "Verizon",
+        "type": "isp"
+      },
+      {
+        "id": "MGMT",
+        "type": "MGMT"
+      }
+    ],
+    "links": [
+      {
+        "source": "NYDC-RTR01",
+        "source_interface": "e1/0",
+        "target": "BOSDC-RTR01",
+        "target_interface": "e1/0"
+      },
+      {
+        "source": "NYDC-RTR01",
+        "source_interface": "e0/1",
+        "target": "ATT",
+        "target_interface": "e0/1"
+      },
+      {
+        "source": "NYDC-RTR01",
+        "source_interface": "e0/0",
+        "target": "EWRDC-RTR01",
+        "target_interface": "e0/1"
+      },
+      {
+        "source": "BOSDC-RTR01",
+        "source_interface": "e0/1",
+        "target": "ATT",
+        "target_interface": "e0/2"
+      },
+      {
+        "source": "BOSDC-RTR01",
+        "source_interface": "e0/2",
+        "target": "Verizon",
+        "target_interface": "e0/1"
+      },
+      {
+        "source": "BOSDC-RTR01",
+        "source_interface": "e0/0",
+        "target": "MGMT",
+        "target_interface": "po1"
+      },
+      {
+        "source": "ATT",
+        "source_interface": "e0/3",
+        "target": "EWRDC-RTR01",
+        "target_interface": "e0/1"
+      },
+      {
+        "source": "EWRDC-RTR01",
+        "source_interface": "e1/1",
+        "target": "Verizon",
+        "target_interface": "e0/2"
+      },
+      {
+        "source": "EWRDC-RTR01",
+        "source_interface": "e0/2",
+        "target": "MGMT",
+        "target_interface": "po2"
+      },
+      {
+        "source": "NYDC-RTR01",
+        "source_interface": "e0/2",
+        "target": "MGMT",
+        "target_interface": "po3"
+      }
+    ]
+  }
+}
